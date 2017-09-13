@@ -36,8 +36,8 @@
               }}</span>
           </div>
           <div class="operators">
-            <div class="icon i-left">
-              <i class="icon-sequence"></i>
+            <div class="icon i-left" @click="changeMode">
+              <i :class="iconMode"></i>
             </div>
             <div class="icon i-left" :class="disableCls">
               <i @click="prev" class="icon-prev"></i>
@@ -78,7 +78,8 @@
     </transition>
     <audio ref="audio" :src="currentSong.url"
            @canplay="ready" @error="error"
-           @timeupdate="updateTime"></audio>
+           @timeupdate="updateTime"
+           @ended="end"></audio>
   </div>
 </template>
 
@@ -88,8 +89,10 @@
   import {prefixStyle} from 'common/js/dom'
   import ProgressBar from 'base/progress-bar/progress-bar'
   import ProgressCircle from 'base/progress-circle/progress-circle'
+  import {playMode} from 'common/js/config'
+  import {shuffle} from 'common/js/util'
 
-  const transfrom = prefixStyle('transform')
+  const transform = prefixStyle('transform')
 
   export default {
     data() {
@@ -102,6 +105,10 @@
     computed: {
       cdCls() {
         return this.playing ? 'play' : 'play pause'
+      },
+      iconMode() {
+        return this.mode === playMode.sequence ? 'icon-sequence' : this.mode ===
+        playMode.loop ? 'icon-loop' : 'icon-random'
       },
       playIcon() {
         return this.playing ? 'icon-pause' : 'icon-play'
@@ -120,7 +127,9 @@
         'playlist',
         'currentSong',
         'playing',
-        'currentIndex'
+        'currentIndex',
+        'mode',
+        'sequenceList'
       ])
     },
     methods: {
@@ -135,7 +144,7 @@
 
         let animation = {
           0: {
-            transform: `translate3d(${x}px, ${y}px, 0) scale(${scale})`
+            transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
           },
           60: {
             transform: `translate3d(0,0,0) scale(1.1)`
@@ -162,19 +171,30 @@
       },
       leave(el, done) {
         this.$refs.cdWrapper.style.transition = 'all 0.4s'
-        const {x, y, scale} = this._getPosAndScale
-        this.$refs.cdWrapper.style[transfrom] = `translate3d(${x}px, ${y}px, 0) scale(${scale})`
-        this.$refs.cdWrapper.addEventListener('transitioned', done)
+        const {x, y, scale} = this._getPosAndScale()
+        this.$refs.cdWrapper.style[transform] = `translate3d(${x}px,${y}px,0) scale(${scale})`
+        this.$refs.cdWrapper.addEventListener('transitionend', done)
       },
       afterLeave() {
         this.$refs.cdWrapper.style.transition = ''
-        this.$refs.cdWrapper.style[transfrom] = ''
+        this.$refs.cdWrapper.style[transform] = ''
       },
       togglePlaying() {
         if (!this.songReady) {
           return
         }
         this.setPlayingState(!this.playing)
+      },
+      end() {
+        if (this.mode === playMode.loop) {
+          this.loop()
+        }
+        this.next()
+      },
+      loop() {
+        this.$refs.audio.pause()
+        this.$refs.audio.currentTime = 0
+        this.$refs.audio.play()
       },
       next() {
         if (!this.songReady) {
@@ -225,6 +245,24 @@
           this.togglePlaying()
         }
       },
+      changeMode() {
+        const mode = (this.mode + 1) % 3
+        this.setPlayMode(mode)
+        let list = null
+        if (mode === playMode.random) {
+          list = shuffle(this.sequenceList)
+        } else {
+          list = this.sequenceList
+        }
+        this.resetCurrentIndex(list)
+        this.setPlayList(list)
+      },
+      resetCurrentIndex(list) {
+        let index = list.findIndex((item) => {
+          return item.id === this.currentSong.id
+        })
+        this.setCurrentIndex(index)
+      },
       _pad(num, n = 2) {
         let len = num.toString().length
         while (len < n) {
@@ -247,11 +285,16 @@
       ...mapMutations({
         setFullScreen: 'SET_FULL_SCREEN',
         setPlayingState: 'SET_PLAYING_STATE',
-        setCurrentIndex: 'SET_CURRENT_INDEX'
+        setCurrentIndex: 'SET_CURRENT_INDEX',
+        setPlayMode: 'SET_PLAY_MODE',
+        setPlayList: 'SET_PLAYLIST'
       })
     },
     watch: {
-      currentSong() {
+      currentSong(newSong, oldSong) {
+        if (newSong.id === oldSong.id) {
+          return
+        }
         this.$nextTick(() => {
           this.$refs.audio.play()
         })
@@ -283,6 +326,16 @@
       bottom: 0
       z-index: 150
       background: $color-background
+      &.normal-enter-active, &.normal-leave-active
+        transition: all 0.4s
+        .top, .bottom
+          transition: all 0.4s cubic-bezier(0.86, 0.18, 0.82, 1.32)
+      &.normal-enter, &.normal-leave-to
+        opacity: 0
+        .top
+          transform: translate3d(0, -100px, 0)
+        .bottom
+          transform: translate3d(0, 100px, 0)
       .background
         position: absolute
         left: 0
@@ -442,16 +495,6 @@
             text-align: left
           .icon-favorite
             color: $color-sub-theme
-      &.normal-enter-active, &.normal-leave-active
-        transition: all 0.4s
-        .top, .bottom
-          transition: all 0.4s cubic-bezier(0.86, 0.18, 0.82, 1.32)
-      &.normal-enter, &.normal-leave-to
-        opacity: 0
-        .top
-          transform: translate3d(0, -100px, 0)
-        .bottom
-          transform: translate3d(0, 100px, 0)
     .mini-player
       display: flex
       align-items: center
