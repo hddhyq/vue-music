@@ -48,7 +48,6 @@ apiRoutes.get('/lyric', function (req, res) {
     console.log(e)
   })
 })
-})
 
 apiRoutes.get('/getDiscList', function (req, res) {
   var url = 'https://c.y.qq.com/splcloud/fcgi-bin/fcg_get_diss_by_tag.fcg'

@@ -1,4 +1,3 @@
-import jsonp from 'common/js/jsonp'
 import {commonParams} from './config'
 import axios from 'axios'
 
@@ -7,7 +6,7 @@ export function getLyric(mid) {
 
   const data = Object.assign({}, commonParams, {
     songmid: mid,
-    pcachetime: +new Data(),
+    pcachetime: +new Date(),
     platform: 'ypp',
     hostUin: 0,
     needNewCode: 0,
