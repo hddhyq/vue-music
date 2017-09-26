@@ -363,7 +363,7 @@
         this.$refs.middleL.style.opacity = 1 - this.touch.percent
         this.$refs.middleL.style[transitionDuration] = 0
       },
-      middleTouchEnd(e) {
+      middleTouchEnd() {
         let offsetWidth
         let opacity
         if (this.currentShow === 'cd') {
@@ -421,13 +421,20 @@
     },
     watch: {
       currentSong(newSong, oldSong) {
+        if (!newSong.id) {
+          return
+        }
         if (newSong.id === oldSong.id) {
           return
         }
         if (this.currentLyric) {
-          this.currentLyric.stop
+          this.currentLyric.stop()
+          this.currentTime = 0
+          this.playingLyric = ''
+          this.currentLineNum = 0
         }
-        setTimeout(() => {
+        clearTimeout(this.timer)
+        this.timer = setTimeout(() => {
           this.$refs.audio.play()
           this.getLyric()
         }, 1000)
