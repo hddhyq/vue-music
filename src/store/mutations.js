@@ -25,11 +25,14 @@ const mutations = {
   [types.SET_DISC](state, disc) {
     state.disc = disc
   },
-  [types.SET_TOPLIST](state, list) {
-    state.toplist = list
+  [types.SET_TOPLIST](state, toplist) {
+    state.toplist = toplist
   },
   [types.SET_SEARCH_HISTORY](state, history) {
     state.searchHistory = history
+  },
+  [types.SET_PLAY_HISTORY](state, history) {
+    state.playHistory = history
   }
 }
 export default mutations
