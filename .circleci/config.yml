@@ -1,9 +1,37 @@
-version: 2.1
-
-orbs:
-  hello: circleci/hello-build@0.0.7 # uses the circleci/buildpack-deps Docker image
-
-workflows:
-  "Hello Workflow":
-    jobs:
-      - hello/hello-build
+version: 2
+jobs:
+  build:
+    working_directory: ~/mern-starter # directory where steps will run
+    docker: # use the docker executor type; machine and macos executors are also supported
+      - image: circleci/node:8.10 # the primary container, where your job's commands are run
+    filters:
+      branches:
+        only: master
+    steps:
+      - add_ssh_keys:
+          fingerprints: '41:f1:b3:2d:89:ff:f0:16:a4:eb:49:92:39:27:95:04'
+      - checkout # check out the code in the project directory
+      - run:
+          name: update-npm
+          command: 'sudo npm install -g npm@latest'
+      - restore_cache: # special step to restore the dependency cache
+          # Read about caching dependencies: https://circleci.com/docs/2.0/caching/
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: install-npm
+          command: npm install
+      - save_cache: # special step to save the dependency cache
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - run: # run build
+          name: build
+          command: npm run build
+      - run: # git push
+          name: push-github
+          command: |
+            git config --global user.email "975018306@qq.com"
+            git config --global user.name "hddMachine"
+            git add -f dist
+            git commit -m 'create dist'
+            git push origin `git subtree split --prefix dist master`:gh-pages --force

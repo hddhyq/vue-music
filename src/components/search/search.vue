@@ -17,7 +17,7 @@
           </div>
           <div class="search-history" v-show="searchHistory.length">
             <h1 class="title">
-              <span class="text">搜索历史</span>
+              <span class="text">搜索history历史</span>
               <span class="clear" @click="showConfirm">
               <i class="icon-clear"></i>
             </span>
